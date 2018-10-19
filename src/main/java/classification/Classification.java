@@ -46,7 +46,7 @@ public class Classification {
 
         try {
 
-            URL url = new URL("http://160.40.49.111:911/api/floodDetectionService/query?imageURL="+imageURL+"&concept="+concept);
+            URL url = new URL("http://160.40.49.111:9011/api/floodDetectionService/query?imageURL="+imageURL+"&concept="+concept);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");

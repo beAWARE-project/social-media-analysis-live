@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: social-media-analysis-live
+  name: social-media-analysis-live
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: social-media-analysis-live
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  revisionHistoryLimit: 5
+  template:
+    metadata:
+      labels:
+        app: social-media-analysis-live
+    spec:
+      containers:
+      - image: beaware/social-media-analysis-live:IMAGE_TAG
+        imagePullPolicy: Always
+        name: social-media-analysis-live
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        env:
+          - name: SECRET_MH_API_KEY
+            valueFrom:
+             secretKeyRef:
+              name: mh-secret2
+              key: api_key
+          - name: SECRET_MH_BROKERS
+            valueFrom:
+             secretKeyRef:
+              name: mh-secret2
+              key: kafka_brokers_sasl
+          - name: SECRET_MONGO_URI
+            valueFrom:
+              secretKeyRef:
+                name: mongo-bw2-secret
+                key: uri
+          - name: TWITTER_API_CONSUMER_KEY
+            valueFrom:
+              secretKeyRef:
+                name: twitter-secret
+                key: twitter_api_consumer_key
+          - name: TWITTER_API_CONSUMER_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: twitter-secret
+                key: twitter_api_consumer_secret
+          - name: TWITTER_API_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: twitter-secret
+                key: twitter_api_secret
+          - name: TWITTER_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: twitter-secret
+                key: twitter_api_token

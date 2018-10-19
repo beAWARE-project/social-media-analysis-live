@@ -62,11 +62,6 @@ public class TweetsCrawler {
     private static Client hosebirdClient;
     private static BlockingQueue<String> msgQueue;
     
-    private static final String TWITTER_API_CONSUMER_KEY = System.getenv("TWITTER_API_CONSUMER_KEY");
-    private static final String TWITTER_API_CONSUMER_SECRET = System.getenv("TWITTER_API_CONSUMER_SECRET");
-    private static final String TWITTER_API_SECRET = System.getenv("TWITTER_API_SECRET");
-    private static final String TWITTER_API_TOKEN = System.getenv("TWITTER_API_TOKEN");
-    
     public static void main(String[] args) throws InterruptedException, UnknownHostException, UnsupportedEncodingException {
         
         useCases.add("EnglishHeatwave");
@@ -96,11 +91,16 @@ public class TweetsCrawler {
         List<String> keywords = new ArrayList<>();
         keywords.add("beawaretest");
         
+        String TWITTER_API_CONSUMER_KEY = System.getenv("TWITTER_API_CONSUMER_KEY");
+        String TWITTER_API_CONSUMER_SECRET = System.getenv("TWITTER_API_CONSUMER_SECRET");
+        String TWITTER_API_SECRET = System.getenv("TWITTER_API_SECRET");
+        String TWITTER_API_TOKEN = System.getenv("TWITTER_API_TOKEN");
+        
         msgQueue = new LinkedBlockingQueue<>(16);
         Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
         StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
         hosebirdEndpoint.trackTerms(keywords);
-        Authentication hosebirdAuth = new OAuth1(TWITTER_API_CONSUMER_KEY, TWITTER_API_CONSUMER_SECRET, TWITTER_API_SECRET, TWITTER_API_TOKEN);
+        Authentication hosebirdAuth = new OAuth1(TWITTER_API_CONSUMER_KEY, TWITTER_API_CONSUMER_SECRET, TWITTER_API_TOKEN, TWITTER_API_SECRET);
         ClientBuilder builder = new ClientBuilder()
             .name("Hosebird-Client-01")
             .hosts(hosebirdHosts)

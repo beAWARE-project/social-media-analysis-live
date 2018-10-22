@@ -76,12 +76,15 @@ public class TweetsCrawler {
         keywordsPerCollection.put("GreekHeatwave", keywords);
         
         prepareStreamingAPI();
+        System.out.println("API is ready");
         
         while (!hosebirdClient.isDone()) {
+            System.out.println("Receive");
             String msg = msgQueue.take();
             findUseCaseAndInsert(msg);
         }
-        
+
+        System.out.println("Bus is closed");
         bus.close();
         
     }

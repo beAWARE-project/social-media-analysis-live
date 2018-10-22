@@ -93,8 +93,8 @@ public class TweetsCrawler {
         
         String TWITTER_API_CONSUMER_KEY = System.getenv("TWITTER_API_CONSUMER_KEY");
         String TWITTER_API_CONSUMER_SECRET = System.getenv("TWITTER_API_CONSUMER_SECRET");
-        String TWITTER_API_SECRET = System.getenv("TWITTER_API_SECRET");
         String TWITTER_API_TOKEN = System.getenv("TWITTER_API_TOKEN");
+        String TWITTER_API_SECRET = System.getenv("TWITTER_API_SECRET");
         
         msgQueue = new LinkedBlockingQueue<>(16);
         Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);

@@ -78,6 +78,7 @@ public class TweetsCrawler {
         prepareStreamingAPI();
         
         while (!hosebirdClient.isDone()) {
+            System.out.println("new tweet received");
             String msg = msgQueue.take();
             findUseCaseAndInsert(msg);
         }
@@ -140,7 +141,7 @@ public class TweetsCrawler {
     
     private static void insert(String msg, String useCase) throws UnknownHostException, NoSuchAlgorithmException, KeyManagementException{
         
-        boolean relevancy = false;
+        String relevancy = "";
         
         JsonObject obj = new JsonParser().parse(msg).getAsJsonObject();
         
@@ -173,10 +174,11 @@ public class TweetsCrawler {
                     if(media.size() > 0){
                         JsonObject image = media.get(0).getAsJsonObject();
                         if(image.has("media_url")){
-                            System.out.print(" -> image classification");
+                            System.out.print("-> image classification ");
                             String imageURL = image.get("media_url").getAsString();
                             ImageResponse ir = Classification.classifyImage(imageURL, useCase);
-                            relevancy = ir.getRelevancy();
+                            relevancy = String.valueOf(ir.getRelevancy());
+                            System.out.print("-> "+relevancy+" ");
 
                             image.addProperty("dcnn_feature", ir.getDcnnFeature());
                             media.set(0,image);
@@ -195,10 +197,11 @@ public class TweetsCrawler {
                 if(media.size() > 0){
                     JsonObject image = media.get(0).getAsJsonObject();
                     if(image.has("media_url")){
-                        System.out.print(" -> image classification");
+                        System.out.print("-> image classification ");
                         String imageURL = image.get("media_url").getAsString();
                         ImageResponse ir = Classification.classifyImage(imageURL, useCase);
-                        relevancy = ir.getRelevancy();
+                        relevancy = String.valueOf(ir.getRelevancy());
+                        System.out.print("-> "+relevancy+" ");
                         
                         image.addProperty("dcnn_feature", ir.getDcnnFeature());
                         media.set(0,image);
@@ -209,17 +212,23 @@ public class TweetsCrawler {
             }
         }
         
-        //include when service is ready
-        /*if(!relevancy){
-            System.out.print(" -> text classification");
-            TextResponse tr = Classification.classifyText(text, useCase, db);
-            obj.addProperty("concepts", tr.getConcepts());
-            relevancy = tr.getRelevancy();
-        }*/
+        if(relevancy.equals("")||relevancy.equals("false")){
+            if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){
+                System.out.print("-> text classification ");
+                relevancy = Classification.classifyText(text, useCase);
+                if(!relevancy.equals("")){
+                    System.out.print("-> "+relevancy);
+                }
+                
+            }
+        }
         
-        System.out.println(" -> " + relevancy);
-        obj.addProperty("estimated_relevancy", relevancy);
-        
+        System.out.println("");
+        if(relevancy.equals("true")){
+            obj.addProperty("estimated_relevancy", true);
+        }else if(relevancy.equals("false")){
+            obj.addProperty("estimated_relevancy", false);
+        }
         
         MongoClient mongoClient = MongoAPI.connect();
         DB db = mongoClient.getDB("BeAware");

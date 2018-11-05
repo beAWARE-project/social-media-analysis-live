@@ -5,7 +5,7 @@
  */
 package crawler;
 
-import com.sun.org.apache.xml.internal.security.utils.Base64;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -40,7 +40,7 @@ public class Cryptonite {
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, salt);
             byte[] encodedValue = cipher.doFinal(plainText.getBytes());
-            return Base64.encode(encodedValue);
+            return new String(Base64.getEncoder().encode(encodedValue));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -58,7 +58,7 @@ public class Cryptonite {
         try {
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, salt);
-            byte[] decodedValue = Base64.decode(encodedText);
+            byte[] decodedValue = Base64.getDecoder().decode(encodedText);
             byte[] decValue = cipher.doFinal(decodedValue);
             return new String(decValue);
         } catch (Exception e) {

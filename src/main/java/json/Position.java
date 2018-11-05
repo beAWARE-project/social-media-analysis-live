@@ -23,4 +23,12 @@ public class Position {
         this.longitude = longitude;
     }
     
+    public double getLatitude(){
+        return latitude;
+    }
+    
+    public double getLongitude(){
+        return longitude;
+    }
+    
 }

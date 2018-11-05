@@ -151,19 +151,28 @@ public class TweetsCrawler {
             obj.addProperty("is_retweeted_status",false);
         }
         
-        String text = "";
+        String text;
+        Position position;
+        
+        text = obj.get("text").getAsString();
+        position = getLocation(text); //this could be added to json
+        text = cleanText(text);
+        text = replaceLocation(text);
+        obj.addProperty("text", text);
+        
         if(obj.has("extended_tweet")){
             JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
             text = extended_tweet.get("full_text").getAsString();
-        }else{
-            text = obj.get("text").getAsString();
+            position = getLocation(text); //this could be added to json
+            text = cleanText(text);
+            text = replaceLocation(text);
+            obj.getAsJsonObject("extended_tweet").addProperty("full_text", text);
         }
         
-        //EDIT TWEET
-        // remove #beawaretest
-        // replace codes with real locations
-        // give location (x,y)
-        // anonymization
+        String name = obj.getAsJsonObject("user").get("name").getAsString();
+        obj.getAsJsonObject("user").addProperty("name", Cryptonite.getEncrypted(name));
+        String screen_name = obj.getAsJsonObject("user").get("screen_name").getAsString();
+        obj.getAsJsonObject("user").addProperty("screen_name", Cryptonite.getEncrypted(screen_name));
 
         if(obj.has("extended_tweet")){
             JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
@@ -259,13 +268,12 @@ public class TweetsCrawler {
 
             Header header = new Header(Configuration.socialMediaText001, 0, 1, "SMA", "sma-msg-"+now, date, "Actual", "Alert", "citizen", "Restricted", "", "", 0, "", "");
 
-            /*Body body;
-            if(hasPosition){
-                body = new Body("SMA", "INC_SMA_"+collectionName+"_"+id, language, date, text, position);
+            Body body;
+            if(position.getLatitude()==0.0 && position.getLongitude()==0.0){
+                body = new Body("SMA", "INC_SMA_"/*+useCase+"_"*/+id, language, date, text);
             }else{
-                body = new Body("SMA", "INC_SMA_"+collectionName+"_"+id, language, date, text);
-            }*/
-            Body body = new Body("SMA", "INC_SMA_"/*+useCase+"_"*/+id, language, date, text);
+                body = new Body("SMA", "INC_SMA_"/*+useCase+"_"*/+id, language, date, text, position);
+            }
 
             Message message = new Message(header, body);
 
@@ -280,4 +288,47 @@ public class TweetsCrawler {
         //}
     }
     
+    private static Position getLocation(String msg){
+        Position position = new Position(0,0); //default Thessaloniki?
+        
+        if(msg.contains("ΚΘ_4")){
+            return new Position(40.3714, 22.5753);
+        }else if(msg.contains("ΚΘ_6")){
+            return new Position(40.3606, 22.5825);
+        }else if(msg.contains("ΠΑΤ")){
+            return new Position(40.6325, 22.9407);
+        }else if(msg.contains("ΠΧ")){
+            return new Position(40.6008, 22.9701);
+        }else if(msg.contains("ΠΤ")){
+            return new Position(40.6140, 22.9722);
+        }else if(msg.contains("ΔΕ")){
+            return new Position(40.6333, 22.9495);
+        }else if(msg.contains("ΔΤ")){
+            return new Position(40.6313, 22.9455);
+        }else if(msg.contains("ΔΒ")){
+            return new Position(40.5956, 22.9600);
+        }
+        
+        return position;
+    }
+    
+    private static String replaceLocation(String msg){
+        String tweet = msg;
+        
+        tweet = tweet.replace("ΚΘ_4", "4ο ΚΑΠΗ").replace("ΚΘ_6", "6ο ΚΑΠΗ").replace("ΠΑΤ", "Πλατεία Αριστοτέλους").replace("ΠΧ", "Χαριλάου").replace("ΠΤ", "Τούμπα")
+                .replace("ΔΕ", "Εγνατία").replace("ΔΤ", "Τσιμισκή").replace("ΔΒ", "Βούλγαρη");
+        
+        return tweet;
+    }
+    
+    private static String cleanText(String msg){
+        String tweet = msg;
+        String pattern = "(?:\\s|\\A)[@]+([A-Za-z0-9-_]+)";
+        
+        tweet = tweet.replace("#THIS_IS_A_TEST", "").replace("#beawaretest", "");
+        
+        tweet = tweet.replaceAll(pattern, " @user");
+        
+        return tweet;
+    }
 }

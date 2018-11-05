@@ -22,4 +22,6 @@ public class Configuration {
     public static String kafka_admin_url = "https://kafka-admin-prod02.messagehub.services.eu-gb.bluemix.net:443";
 
     public static String socialMediaText001 = "TOP001_SOCIAL_MEDIA_TEXT";
+    
+    public static String CRYPT_KEY = ")By]3BN7F!FsupM$";
 }

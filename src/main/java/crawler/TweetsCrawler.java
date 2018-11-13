@@ -292,9 +292,9 @@ public class TweetsCrawler {
         Position position = new Position(0,0); //default Thessaloniki?
         
         if(msg.contains("ΚΘ_4")){
-            return new Position(40.3714, 22.5753);
+            return new Position(40.6207, 22.9649);
         }else if(msg.contains("ΚΘ_6")){
-            return new Position(40.3606, 22.5825);
+            return new Position(40.6019, 22.9736);
         }else if(msg.contains("ΠΑΤ")){
             return new Position(40.6325, 22.9407);
         }else if(msg.contains("ΠΧ")){
@@ -304,7 +304,7 @@ public class TweetsCrawler {
         }else if(msg.contains("ΔΕ")){
             return new Position(40.6333, 22.9495);
         }else if(msg.contains("ΔΤ")){
-            return new Position(40.6313, 22.9455);
+            return new Position(40.6266, 22.9526);
         }else if(msg.contains("ΔΒ")){
             return new Position(40.5956, 22.9600);
         }

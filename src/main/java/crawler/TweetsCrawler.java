@@ -7,7 +7,7 @@ package crawler;
 
 import classification.Classification;
 import classification.ImageResponse;
-import classification.TextResponse;
+import classification.Validation;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -15,7 +15,6 @@ import com.google.gson.JsonParser;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.twitter.hbc.ClientBuilder;
@@ -27,12 +26,9 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -62,7 +58,7 @@ public class TweetsCrawler {
     private static Client hosebirdClient;
     private static BlockingQueue<String> msgQueue;
     
-    public static void main(String[] args) throws InterruptedException, UnknownHostException, UnsupportedEncodingException {
+    public static void main(String[] args) throws InterruptedException, UnknownHostException, UnsupportedEncodingException, NoSuchAlgorithmException, KeyManagementException {
         
         useCases.add("EnglishHeatwave");
         useCases.add("GreekHeatwave");
@@ -113,23 +109,19 @@ public class TweetsCrawler {
         
     }
     
-    private static void findUseCaseAndInsert(String msg) throws UnknownHostException{
+    private static void findUseCaseAndInsert(String msg) throws UnknownHostException, NoSuchAlgorithmException, KeyManagementException{
         
         JsonObject obj = new JsonParser().parse(msg).getAsJsonObject();
-        if(obj.get("text") != null){
-            String text = obj.get("text").getAsString();
-            if(obj.has("extended_tweet")){
-                JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
-                text = extended_tweet.get("full_text").getAsString();
-            }
+        String text = getText(obj);
+        if(!text.equals("")){
             for(String useCase : useCases){
                 List<String> keywords = keywordsPerCollection.get(useCase);
                 for(String keyword : keywords){
                     if(text.contains(keyword)){
                         try{
-                            System.out.println("Insert tweet to " + useCase);
-                            insert(msg, useCase);
-                        }catch(Exception e){
+                            System.out.print("New tweet to " + useCase + " ");
+                            save(msg, useCase);
+                        }catch(UnknownHostException e){
                             System.out.println("Error: " + e);
                         }
                         break;
@@ -139,9 +131,7 @@ public class TweetsCrawler {
         }
     }
     
-    private static void insert(String msg, String useCase) throws UnknownHostException, NoSuchAlgorithmException, KeyManagementException{
-        
-        String relevancy = "";
+    private static void save(String msg, String useCase) throws UnknownHostException, NoSuchAlgorithmException, KeyManagementException{
         
         JsonObject obj = new JsonParser().parse(msg).getAsJsonObject();
         
@@ -151,29 +141,84 @@ public class TweetsCrawler {
             obj.addProperty("is_retweeted_status",false);
         }
         
-        String text;
-        Position position;
-        
-        text = obj.get("text").getAsString();
-        position = getLocation(text); //this could be added to json
-        text = cleanText(text);
-        text = replaceLocation(text);
-        obj.addProperty("text", text);
-        
-        if(obj.has("extended_tweet")){
-            JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
-            text = extended_tweet.get("full_text").getAsString();
-            position = getLocation(text); //this could be added to json
-            text = cleanText(text);
-            text = replaceLocation(text);
-            obj.getAsJsonObject("extended_tweet").addProperty("full_text", text);
-        }
+        String text = getText(obj);
+        Position position = getLocation(text); //this could be added to json
+        obj = updateText(obj);
         
         String name = obj.getAsJsonObject("user").get("name").getAsString();
         obj.getAsJsonObject("user").addProperty("name", Cryptonite.getEncrypted(name));
         String screen_name = obj.getAsJsonObject("user").get("screen_name").getAsString();
         obj.getAsJsonObject("user").addProperty("screen_name", Cryptonite.getEncrypted(screen_name));
+        
+        /* STEP ONE - Detect fake tweets */
+        
+        //TODO
+        
+        /* STEP TWO - Check emoticons/emojis */
+        
+        boolean emoticon_relevancy = Validation.EmoticonsEstimation(text);
+        System.out.print("-> emoticon classification : "+emoticon_relevancy+" ");
+        if(!emoticon_relevancy){
+            obj.addProperty("emoticon_relevancy", false);
+            insert(obj, useCase);
+        }else{
+            obj.addProperty("emoticon_relevancy", true);
+            
+            /* STEP THREE - Classificy based on visual or textual information */
+        
+            boolean estimated_relevancy = false;
+            String imageURL = getImageURL(obj);
+            if(!imageURL.equals("")){
+                System.out.print("-> image classification ");
+                ImageResponse ir = Classification.classifyImage(imageURL, useCase);
+                estimated_relevancy = ir.getRelevancy();
+                System.out.print(": "+estimated_relevancy+" ");
+                obj.addProperty("dcnn_feature", ir.getDcnnFeature());
+            }
 
+            if(estimated_relevancy){
+                obj.addProperty("estimated_relevancy", true);
+                insert(obj, useCase);
+                forward(obj, useCase, position);
+            }else if(!estimated_relevancy || imageURL.equals("")){
+                if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){
+                    System.out.print("-> text classification ");
+                    String estimated_relevancy_str = Classification.classifyText(text, useCase);
+                    if(estimated_relevancy_str.equals("")){
+                        if(!imageURL.equals("")){ obj.addProperty("estimated_relevancy", false); }
+                        insert(obj, useCase);
+                    }else if(estimated_relevancy_str.equals("true")){
+                        System.out.print(": "+estimated_relevancy_str+" ");
+                        obj.addProperty("estimated_relevancy", true);
+                        insert(obj, useCase);
+                        forward(obj, useCase, position);
+                    }else if(estimated_relevancy_str.equals("false")){
+                        System.out.print(": "+estimated_relevancy_str+" ");
+                        obj.addProperty("estimated_relevancy", false);
+                        insert(obj, useCase);
+                    }
+                }else{
+                    if(!imageURL.equals("")){ obj.addProperty("estimated_relevancy", false); }
+                    insert(obj, useCase);
+                }
+            }
+        }
+
+    }
+    
+    private static String getText(JsonObject obj){
+        String text = "";
+        if(obj.has("extended_tweet")){
+            JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
+            text = extended_tweet.get("full_text").getAsString();
+        }else if(obj.get("text") != null){
+            text = obj.get("text").toString();
+        }
+        return text;
+    }
+    
+    private static String getImageURL(JsonObject obj){
+        String imageURL = "";
         if(obj.has("extended_tweet")){
             JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
             if(extended_tweet.has("entities")){
@@ -183,17 +228,7 @@ public class TweetsCrawler {
                     if(media.size() > 0){
                         JsonObject image = media.get(0).getAsJsonObject();
                         if(image.has("media_url")){
-                            System.out.print("-> image classification ");
-                            String imageURL = image.get("media_url").getAsString();
-                            ImageResponse ir = Classification.classifyImage(imageURL, useCase);
-                            relevancy = String.valueOf(ir.getRelevancy());
-                            System.out.print("-> "+relevancy+" ");
-
-                            image.addProperty("dcnn_feature", ir.getDcnnFeature());
-                            media.set(0,image);
-                            entities.add("media", media);
-                            extended_tweet.add("entities", entities);
-                            obj.add("extended_tweet", extended_tweet);
+                            imageURL = image.get("media_url").getAsString();
                         }
                     }
                 }
@@ -206,86 +241,83 @@ public class TweetsCrawler {
                 if(media.size() > 0){
                     JsonObject image = media.get(0).getAsJsonObject();
                     if(image.has("media_url")){
-                        System.out.print("-> image classification ");
-                        String imageURL = image.get("media_url").getAsString();
-                        ImageResponse ir = Classification.classifyImage(imageURL, useCase);
-                        relevancy = String.valueOf(ir.getRelevancy());
-                        System.out.print("-> "+relevancy+" ");
-                        
-                        image.addProperty("dcnn_feature", ir.getDcnnFeature());
-                        media.set(0,image);
-                        entities.add("media", media);
-                        obj.add("entities", entities);
+                        imageURL = image.get("media_url").getAsString();
                     }
                 }
             }
         }
-        
-        if(relevancy.equals("")||relevancy.equals("false")){
-            if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){
-                System.out.print("-> text classification ");
-                relevancy = Classification.classifyText(text, useCase);
-                if(!relevancy.equals("")){
-                    System.out.print("-> "+relevancy);
-                }
-                
-            }
+        return imageURL;
+    }
+    
+    private static JsonObject updateText(JsonObject obj){
+        if(obj.has("extended_tweet")){
+            JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
+            String text = extended_tweet.get("full_text").getAsString();
+            text = cleanText(text);
+            text = replaceLocation(text);
+            obj.getAsJsonObject("extended_tweet").addProperty("full_text", text);
+        }else if(obj.get("text") != null){
+            String text = obj.get("text").toString();
+            text = cleanText(text);
+            text = replaceLocation(text);
+            obj.addProperty("text", text);
         }
+        return obj;
+    }
+    
+    private static void insert(JsonObject obj, String useCase){
         
-        System.out.println("");
-        if(relevancy.equals("true")){
-            obj.addProperty("estimated_relevancy", true);
-        }else if(relevancy.equals("false")){
-            obj.addProperty("estimated_relevancy", false);
-        }
-        
-        MongoClient mongoClient = MongoAPI.connect();
-        DB db = mongoClient.getDB("BeAware");
-        DBCollection collection = db.getCollection("Consumer");
-        DBCollection collection_backup = db.getCollection("LiveBackup");
-        BasicDBObject res = (BasicDBObject) JSON.parse(obj.toString());
-        
-        collection.insert(res);
-        collection_backup.insert(res);
-        
-        // skip relevancy for now
-        //if(relevancy){
-            String id = obj.get("id_str").getAsString();
+        try {
+            MongoClient mongoClient = MongoAPI.connect();
+            DB db = mongoClient.getDB("BeAware");
+            DBCollection collection = db.getCollection("Consumer");
+            DBCollection collection_backup = db.getCollection("LiveBackup");
+            BasicDBObject res = (BasicDBObject) JSON.parse(obj.toString());
 
-            String language = "";
-            if(useCase.contains("English")){
-                language = "en-US";
-            }else if(useCase.contains("Italian")){
-                language = "it-IT";
-            }else if(useCase.contains("Greek")){
-                language = "el-GR";
-            }else if(useCase.contains("Spanish")){
-                language = "es-ES";
-            }
-
-            long now = System.currentTimeMillis();
-            String date = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new java.util.Date(now));
-
-            Header header = new Header(Configuration.socialMediaText001, 0, 1, "SMA", "sma-msg-"+now, date, "Actual", "Alert", "citizen", "Restricted", "", "", 0, "", "");
-
-            Body body;
-            if(position.getLatitude()==0.0 && position.getLongitude()==0.0){
-                body = new Body("SMA", "INC_SMA_"/*+useCase+"_"*/+id, language, date, text);
-            }else{
-                body = new Body("SMA", "INC_SMA_"/*+useCase+"_"*/+id, language, date, text, position);
-            }
-
-            Message message = new Message(header, body);
-
-            String message_str = gson.toJson(message);
-
-            try{
-                bus.post(Configuration.socialMediaText001, message_str);
-            }catch(IOException | InterruptedException | ExecutionException | TimeoutException e){
-                System.out.println("Error on send: " + e);
-            }
+            collection.insert(res);
+            collection_backup.insert(res);
+            System.out.print("-> saved\n");
+        } catch (UnknownHostException | NoSuchAlgorithmException | KeyManagementException ex) {
             
-        //}
+        }
+        
+    }
+    
+    private static void forward(JsonObject obj, String useCase, Position position){
+        String id = obj.get("id_str").getAsString();
+
+        String language = "";
+        if(useCase.contains("English")){
+            language = "en-US";
+        }else if(useCase.contains("Italian")){
+            language = "it-IT";
+        }else if(useCase.contains("Greek")){
+            language = "el-GR";
+        }else if(useCase.contains("Spanish")){
+            language = "es-ES";
+        }
+
+        long now = System.currentTimeMillis();
+        String date = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new java.util.Date(now));
+
+        Header header = new Header(Configuration.socialMediaText001, 0, 1, "SMA", "sma-msg-"+now, date, "Actual", "Alert", "citizen", "Restricted", "", "", 0, "", "");
+
+        Body body;
+        if(position.getLatitude()==0.0 && position.getLongitude()==0.0){
+            body = new Body("SMA", "INC_SMA_"/*+useCase+"_"*/+id, language, date, getText(obj));
+        }else{
+            body = new Body("SMA", "INC_SMA_"/*+useCase+"_"*/+id, language, date, getText(obj), position);
+        }
+
+        Message message = new Message(header, body);
+
+        String message_str = gson.toJson(message);
+
+        try{
+            bus.post(Configuration.socialMediaText001, message_str);
+        }catch(IOException | InterruptedException | ExecutionException | TimeoutException e){
+            System.out.println("Error on send: " + e);
+        }
     }
     
     private static Position getLocation(String msg){

@@ -60,7 +60,19 @@ public class TweetsCrawler {
     
     public static void main(String[] args) throws InterruptedException, UnknownHostException, UnsupportedEncodingException, NoSuchAlgorithmException, KeyManagementException {
         
-        useCases.add("EnglishHeatwave");
+        useCases.add("EnglishFloods");
+        useCases.add("ItalianFloods");
+        
+        List<String> keywords = new ArrayList<>();
+        keywords.add("flooding");
+        keywordsPerCollection.put("EnglishFloods", keywords);
+        
+        keywords = new ArrayList<>();
+        keywords.add("alluvione");keywords.add("alluvionevicenza");keywords.add("allagamento");keywords.add("bacchiglione");keywords.add("fiumepiena");
+        keywords.add("allertameteo");keywords.add("sottopassoallagato");keywords.add("allertameteovicenza");keywords.add("esondazione");keywords.add("livellofiume");
+        keywordsPerCollection.put("ItalianFloods", keywords);
+        
+        /*useCases.add("EnglishHeatwave");
         useCases.add("GreekHeatwave");
         
         List<String> keywords = new ArrayList<>();
@@ -69,7 +81,7 @@ public class TweetsCrawler {
         
         keywords = new ArrayList<>();
         keywords.add("καύσωνας");keywords.add("Κελσίου");keywords.add("θερμοκρασία_ρεκόρ");keywords.add("GSCP_GR");
-        keywordsPerCollection.put("GreekHeatwave", keywords);
+        keywordsPerCollection.put("GreekHeatwave", keywords);*/
         
         prepareStreamingAPI();
         

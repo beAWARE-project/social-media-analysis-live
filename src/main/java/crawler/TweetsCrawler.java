@@ -156,6 +156,7 @@ public class TweetsCrawler {
         String text = getText(obj);
         Position position = getLocation(text); //this could be added to json
         obj = updateText(obj);
+        text = getText(obj);
         
         String name = obj.getAsJsonObject("user").get("name").getAsString();
         obj.getAsJsonObject("user").addProperty("name", Cryptonite.getEncrypted(name));

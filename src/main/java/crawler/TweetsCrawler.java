@@ -225,7 +225,7 @@ public class TweetsCrawler {
             JsonObject extended_tweet = obj.get("extended_tweet").getAsJsonObject();
             text = extended_tweet.get("full_text").getAsString();
         }else if(obj.get("text") != null){
-            text = obj.get("text").toString();
+            text = obj.get("text").getAsString();
         }
         return text;
     }
@@ -270,7 +270,7 @@ public class TweetsCrawler {
             text = replaceLocation(text);
             obj.getAsJsonObject("extended_tweet").addProperty("full_text", text);
         }else if(obj.get("text") != null){
-            String text = obj.get("text").toString();
+            String text = obj.get("text").getAsString();
             text = cleanText(text);
             text = replaceLocation(text);
             obj.addProperty("text", text);

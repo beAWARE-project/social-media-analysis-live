@@ -335,7 +335,17 @@ public class TweetsCrawler {
     private static Position getLocation(String msg){
         Position position = new Position(0,0); //default Thessaloniki?
         
-        if(msg.contains("ΚΘ_4")){
+        if(msg.contains("S32ap")){
+            return new Position(45.5493, 11.5497);
+        }else if(msg.contains("M90xz")){
+            return new Position(45.5502, 11.5505);
+        }else if(msg.contains("F77ad")){
+            return new Position(45.5522, 11.5494);
+        }else if(msg.contains("C44ud")){
+            return new Position(45.5455, 11.5354);
+        }
+        
+        /*if(msg.contains("ΚΘ_4")){
             return new Position(40.6207, 22.9649);
         }else if(msg.contains("ΚΘ_6")){
             return new Position(40.6019, 22.9736);
@@ -351,7 +361,7 @@ public class TweetsCrawler {
             return new Position(40.6266, 22.9526);
         }else if(msg.contains("ΔΒ")){
             return new Position(40.5956, 22.9600);
-        }
+        }*/
         
         return position;
     }
@@ -359,8 +369,10 @@ public class TweetsCrawler {
     private static String replaceLocation(String msg){
         String tweet = msg;
         
-        tweet = tweet.replace("ΚΘ_4", "4ο ΚΑΠΗ").replace("ΚΘ_6", "6ο ΚΑΠΗ").replace("ΠΑΤ", "Πλατεία Αριστοτέλους").replace("ΠΧ", "Χαριλάου").replace("ΠΤ", "Τούμπα")
-                .replace("ΔΕ", "Εγνατία").replace("ΔΤ", "Τσιμισκή").replace("ΔΒ", "Βούλγαρη");
+        tweet = tweet.replace("S32ap", "Matteotti").replace("M90xz", "Angeli").replace("C44ud", "Vicenza").replace("F77ad", "Bacchiglione");
+        
+        /*tweet = tweet.replace("ΚΘ_4", "4ο ΚΑΠΗ").replace("ΚΘ_6", "6ο ΚΑΠΗ").replace("ΠΑΤ", "Πλατεία Αριστοτέλους").replace("ΠΧ", "Χαριλάου").replace("ΠΤ", "Τούμπα")
+                .replace("ΔΕ", "Εγνατία").replace("ΔΤ", "Τσιμισκή").replace("ΔΒ", "Βούλγαρη");*/
         
         return tweet;
     }

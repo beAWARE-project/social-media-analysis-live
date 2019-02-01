@@ -8,6 +8,7 @@ package crawler;
 import classification.Classification;
 import classification.ImageResponse;
 import classification.Validation;
+import classification.VerificationResponse;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -158,65 +159,68 @@ public class TweetsCrawler {
         obj = updateText(obj);
         text = getText(obj);
         
-        String name = obj.getAsJsonObject("user").get("name").getAsString();
-        obj.getAsJsonObject("user").addProperty("name", Cryptonite.getEncrypted(name));
-        String screen_name = obj.getAsJsonObject("user").get("screen_name").getAsString();
-        obj.getAsJsonObject("user").addProperty("screen_name", Cryptonite.getEncrypted(screen_name));
-        
         /* STEP ONE - Detect fake tweets */
         
-        //TODO
-        
-        /* STEP TWO - Check emoticons/emojis */
-        
-        boolean emoticon_relevancy = Validation.EmoticonsEstimation(text);
-        System.out.print("-> emoticon classification : "+emoticon_relevancy+" ");
-        if(!emoticon_relevancy){
-            obj.addProperty("emoticon_relevancy", false);
+        VerificationResponse verification = Validation.verifyTweet(obj.toString());
+        boolean isVerified = verification.getPredictedValue();
+        System.out.println("-> verification : "+isVerified+" ");
+        JsonObject verificationObj = new JsonObject();
+        verificationObj.addProperty("predicted", isVerified);
+        verificationObj.addProperty("confidence", verification.getConfidenceValue());
+        obj.add("verification", verificationObj);
+        if(!isVerified){
             insert(obj, useCase);
         }else{
-            obj.addProperty("emoticon_relevancy", true);
-            
-            /* STEP THREE - Classificy based on visual or textual information */
-        
-            boolean estimated_relevancy = false;
-            String imageURL = getImageURL(obj);
-            if(!imageURL.equals("")){
-                System.out.print("-> image classification ");
-                ImageResponse ir = Classification.classifyImage(imageURL, useCase);
-                estimated_relevancy = ir.getRelevancy();
-                System.out.print(": "+estimated_relevancy+" ");
-                obj.addProperty("dcnn_feature", ir.getDcnnFeature());
-            }
+            /* STEP TWO - Check emoticons/emojis */
 
-            if(estimated_relevancy){
-                obj.addProperty("estimated_relevancy", true);
+            boolean emoticon_relevancy = Validation.EmoticonsEstimation(text);
+            System.out.print("-> emoticon classification : "+emoticon_relevancy+" ");
+            if(!emoticon_relevancy){
+                obj.addProperty("emoticon_relevancy", false);
                 insert(obj, useCase);
-                forward(obj, useCase, position);
-            }else if(!estimated_relevancy || imageURL.equals("")){
-                if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){
-                    System.out.print("-> text classification ");
-                    String estimated_relevancy_str = Classification.classifyText(text, useCase);
-                    if(estimated_relevancy_str.equals("")){
+            }else{
+                obj.addProperty("emoticon_relevancy", true);
+
+                /* STEP THREE - Classificy based on visual or textual information */
+
+                boolean estimated_relevancy = false;
+                String imageURL = getImageURL(obj);
+                if(!imageURL.equals("")){
+                    System.out.print("-> image classification ");
+                    ImageResponse ir = Classification.classifyImage(imageURL, useCase);
+                    estimated_relevancy = ir.getRelevancy();
+                    System.out.print(": "+estimated_relevancy+" ");
+                    obj.addProperty("dcnn_feature", ir.getDcnnFeature());
+                }
+
+                if(estimated_relevancy){
+                    obj.addProperty("estimated_relevancy", true);
+                    insert(obj, useCase);
+                    forward(obj, useCase, position);
+                }else if(!estimated_relevancy || imageURL.equals("")){
+                    if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){
+                        System.out.print("-> text classification ");
+                        String estimated_relevancy_str = Classification.classifyText(text, useCase);
+                        if(estimated_relevancy_str.equals("")){
+                            if(!imageURL.equals("")){ obj.addProperty("estimated_relevancy", false); }
+                            insert(obj, useCase);
+                        }else if(estimated_relevancy_str.equals("true")){
+                            System.out.print(": "+estimated_relevancy_str+" ");
+                            obj.addProperty("estimated_relevancy", true);
+                            insert(obj, useCase);
+                            forward(obj, useCase, position);
+                        }else if(estimated_relevancy_str.equals("false")){
+                            System.out.print(": "+estimated_relevancy_str+" ");
+                            obj.addProperty("estimated_relevancy", false);
+                            insert(obj, useCase);
+                        }
+                    }else{
                         if(!imageURL.equals("")){ obj.addProperty("estimated_relevancy", false); }
                         insert(obj, useCase);
-                    }else if(estimated_relevancy_str.equals("true")){
-                        System.out.print(": "+estimated_relevancy_str+" ");
-                        obj.addProperty("estimated_relevancy", true);
-                        insert(obj, useCase);
-                        forward(obj, useCase, position);
-                    }else if(estimated_relevancy_str.equals("false")){
-                        System.out.print(": "+estimated_relevancy_str+" ");
-                        obj.addProperty("estimated_relevancy", false);
-                        insert(obj, useCase);
                     }
-                }else{
-                    if(!imageURL.equals("")){ obj.addProperty("estimated_relevancy", false); }
-                    insert(obj, useCase);
                 }
             }
         }
-
     }
     
     private static String getText(JsonObject obj){
@@ -279,6 +283,11 @@ public class TweetsCrawler {
     }
     
     private static void insert(JsonObject obj, String useCase){
+        
+        String name = obj.getAsJsonObject("user").get("name").getAsString();
+        obj.getAsJsonObject("user").addProperty("name", Cryptonite.getEncrypted(name));
+        String screen_name = obj.getAsJsonObject("user").get("screen_name").getAsString();
+        obj.getAsJsonObject("user").addProperty("screen_name", Cryptonite.getEncrypted(screen_name));
         
         try {
             MongoClient mongoClient = MongoAPI.connect();

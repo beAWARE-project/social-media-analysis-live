@@ -5,6 +5,20 @@
  */
 package classification;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+
 /**
  *
  * @author andreadisst
@@ -48,8 +62,46 @@ public class Validation {
         return true;
     }
     
-    /*public static void IsFakeTweet(String text){
+    public static VerificationResponse verifyTweet(String tweet){
         
-    }*/
+        boolean predicted_value = true;
+        Double confidence_value = 0.0;
+        
+        try {
+            
+            StringEntity entity = new StringEntity(tweet,ContentType.APPLICATION_FORM_URLENCODED);
+
+            HttpClient httpClient = HttpClientBuilder.create().build();
+            HttpPost request = new HttpPost("http://160.40.49.111:9015/verify");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+            request.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(request);
+
+            if (response.getStatusLine().getStatusCode() == 200) {
+                HttpEntity httpEntity = response.getEntity();
+                try{
+                    if(!httpEntity.equals("null")){
+                        String output = EntityUtils.toString(httpEntity);
+                        JsonObject obj = new JsonParser().parse(output).getAsJsonObject();
+                        confidence_value = obj.get("confidence_value").getAsDouble();
+                        if( obj.get("predicted_value").getAsString().equals("fake") ){
+                            predicted_value = false;
+                        }
+                    }
+                } catch (JsonSyntaxException | IOException e){
+                    System.out.println("Error: " + e);
+                }
+            }
+            
+        } catch (MalformedURLException e) {
+            System.out.println("Error: " + e);
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+        }
+        
+        return new VerificationResponse(predicted_value,confidence_value);
+    }
     
 }

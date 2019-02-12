@@ -161,13 +161,20 @@ public class TweetsCrawler {
         
         /* STEP ONE - Detect fake tweets */
         
-        VerificationResponse verification = Validation.verifyTweet(obj.toString());
-        boolean isVerified = verification.getPredictedValue();
-        System.out.println("-> verification : "+isVerified+" ");
-        JsonObject verificationObj = new JsonObject();
-        verificationObj.addProperty("predicted", isVerified);
-        verificationObj.addProperty("confidence", verification.getConfidenceValue());
-        obj.add("verification", verificationObj);
+        boolean isVerified = true;
+        
+        JsonObject user = obj.get("user").getAsJsonObject();
+        String user_id = user.get("id_str").getAsString();
+        if(!user_id.equals("920984955047567360")){
+            VerificationResponse verification = Validation.verifyTweet(obj.toString());
+            isVerified = verification.getPredictedValue();
+            System.out.println("-> verification : "+isVerified+" ");
+            JsonObject verificationObj = new JsonObject();
+            verificationObj.addProperty("predicted", isVerified);
+            verificationObj.addProperty("confidence", verification.getConfidenceValue());
+            obj.add("verification", verificationObj);
+        }
+        
         if(!isVerified){
             insert(obj, useCase);
         }else{
@@ -215,8 +222,13 @@ public class TweetsCrawler {
                             insert(obj, useCase);
                         }
                     }else{
-                        if(!imageURL.equals("")){ obj.addProperty("estimated_relevancy", false); }
-                        insert(obj, useCase);
+                        if(!imageURL.equals("")){
+                            obj.addProperty("estimated_relevancy", false);
+                            insert(obj, useCase);
+                        }else{
+                            insert(obj, useCase);
+                            forward(obj, useCase, position);
+                        }
                     }
                 }
             }
@@ -349,6 +361,8 @@ public class TweetsCrawler {
             return new Position(45.5493, 11.5497);
         }else if(msg.contains("M90xz")){
             return new Position(45.5502, 11.5505);
+        }else if(msg.contains("3vg87")){
+            return new Position(45.5505, 11.5450);
         }else if(msg.contains("F77ad")){
             return new Position(45.5522, 11.5494);
         }else if(msg.contains("C44ud")){
@@ -379,7 +393,7 @@ public class TweetsCrawler {
     private static String replaceLocation(String msg){
         String tweet = msg;
         
-        tweet = tweet.replace("S32ap", "Matteotti").replace("M90xz", "Angeli").replace("C44ud", "Vicenza").replace("F77ad", "Bacchiglione");
+        tweet = tweet.replace("S32ap", "Matteotti").replace("M90xz", "Angeli").replace("C44ud", "Vicenza").replace("F77ad", "Bacchiglione").replace("3vg87","Pusterla");
         
         /*tweet = tweet.replace("ΚΘ_4", "4ο ΚΑΠΗ").replace("ΚΘ_6", "6ο ΚΑΠΗ").replace("ΠΑΤ", "Πλατεία Αριστοτέλους").replace("ΠΧ", "Χαριλάου").replace("ΠΤ", "Τούμπα")
                 .replace("ΔΕ", "Εγνατία").replace("ΔΤ", "Τσιμισκή").replace("ΔΒ", "Βούλγαρη");*/

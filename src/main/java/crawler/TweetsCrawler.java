@@ -162,18 +162,20 @@ public class TweetsCrawler {
         /* STEP ONE - Detect fake tweets */
         
         boolean isVerified = true;
+        Double confidence_value = 0.0;
         
         JsonObject user = obj.get("user").getAsJsonObject();
         String user_id = user.get("id_str").getAsString();
         if(!user_id.equals("920984955047567360")){
             VerificationResponse verification = Validation.verifyTweet(obj.toString());
             isVerified = verification.getPredictedValue();
+            confidence_value = verification.getConfidenceValue();
             System.out.println("-> verification : "+isVerified+" ");
-            JsonObject verificationObj = new JsonObject();
-            verificationObj.addProperty("predicted", isVerified);
-            verificationObj.addProperty("confidence", verification.getConfidenceValue());
-            obj.add("verification", verificationObj);
         }
+        JsonObject verificationObj = new JsonObject();
+        verificationObj.addProperty("predicted", isVerified);
+        verificationObj.addProperty("confidence", confidence_value);
+        obj.add("verification", verificationObj);
         
         if(!isVerified){
             insert(obj, useCase);

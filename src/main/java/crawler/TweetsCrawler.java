@@ -313,6 +313,8 @@ public class TweetsCrawler {
             collection.insert(res);
             collection_backup.insert(res);
             System.out.print("-> saved\n");
+            
+            mongoClient.close();
         } catch (UnknownHostException | NoSuchAlgorithmException | KeyManagementException ex) {
             
         }

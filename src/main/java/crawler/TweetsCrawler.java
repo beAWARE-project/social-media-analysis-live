@@ -61,33 +61,32 @@ public class TweetsCrawler {
     
     public static void main(String[] args) throws InterruptedException, UnknownHostException, UnsupportedEncodingException, NoSuchAlgorithmException, KeyManagementException {
         
-        List<String> keywords = new ArrayList<>();
-        
         /* PILOT 3 */
         useCases.add("SpanishFires");
+        List<String> keywords = new ArrayList<>();
         keywords.add("incendio");keywords.add("llamasdefuego");keywords.add("bomberos");
         keywordsPerCollection.put("SpanishFires", keywords);
         
         /* PILOT 2 */
         useCases.add("EnglishFloods");
-        keywords.clear();
+        keywords = new ArrayList<>();
         keywords.add("flooding");
         keywordsPerCollection.put("EnglishFloods", keywords);
         
         useCases.add("ItalianFloods");
-        keywords.clear();
+        keywords = new ArrayList<>();
         keywords.add("alluvione");keywords.add("alluvionevicenza");keywords.add("allagamento");keywords.add("bacchiglione");keywords.add("fiumepiena");
         keywords.add("allertameteo");keywords.add("sottopassoallagato");keywords.add("allertameteovicenza");keywords.add("esondazione");keywords.add("livellofiume");
         keywordsPerCollection.put("ItalianFloods", keywords);
         
         /* PILOT 1 */
         useCases.add("EnglishHeatwave");
-        keywords.clear();
+        keywords = new ArrayList<>();
         keywords.add("heatwave");
         keywordsPerCollection.put("EnglishHeatwave", keywords);
         
         useCases.add("GreekHeatwave");
-        keywords.clear();
+        keywords = new ArrayList<>();
         keywords.add("καύσωνας");keywords.add("Κελσίου");keywords.add("θερμοκρασία_ρεκόρ");keywords.add("GSCP_GR");
         keywordsPerCollection.put("GreekHeatwave", keywords);
         

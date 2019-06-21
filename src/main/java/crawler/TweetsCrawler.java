@@ -213,7 +213,7 @@ public class TweetsCrawler {
                     insert(obj);
                     forward(obj, useCase, position);
                 }else if(!estimated_relevancy || imageURL.equals("")){
-                    if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){
+                    if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")/*||useCase.equals("SpanishFires")*/){ //temporarily
                         System.out.print("-> text classification ");
                         String estimated_relevancy_str = Classification.classifyText(text, useCase);
                         if(estimated_relevancy_str.equals("")){

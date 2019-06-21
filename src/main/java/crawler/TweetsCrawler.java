@@ -61,28 +61,35 @@ public class TweetsCrawler {
     
     public static void main(String[] args) throws InterruptedException, UnknownHostException, UnsupportedEncodingException, NoSuchAlgorithmException, KeyManagementException {
         
-        useCases.add("EnglishFloods");
-        useCases.add("ItalianFloods");
-        
         List<String> keywords = new ArrayList<>();
+        
+        /* PILOT 3 */
+        useCases.add("SpanishFires");
+        keywords.add("incendio");keywords.add("llamasdefuego");keywords.add("bomberos");
+        keywordsPerCollection.put("SpanishFires", keywords);
+        
+        /* PILOT 2 */
+        useCases.add("EnglishFloods");
+        keywords.clear();
         keywords.add("flooding");
         keywordsPerCollection.put("EnglishFloods", keywords);
         
-        keywords = new ArrayList<>();
+        useCases.add("ItalianFloods");
+        keywords.clear();
         keywords.add("alluvione");keywords.add("alluvionevicenza");keywords.add("allagamento");keywords.add("bacchiglione");keywords.add("fiumepiena");
         keywords.add("allertameteo");keywords.add("sottopassoallagato");keywords.add("allertameteovicenza");keywords.add("esondazione");keywords.add("livellofiume");
         keywordsPerCollection.put("ItalianFloods", keywords);
         
-        /*useCases.add("EnglishHeatwave");
-        useCases.add("GreekHeatwave");
-        
-        List<String> keywords = new ArrayList<>();
+        /* PILOT 1 */
+        useCases.add("EnglishHeatwave");
+        keywords.clear();
         keywords.add("heatwave");
         keywordsPerCollection.put("EnglishHeatwave", keywords);
         
-        keywords = new ArrayList<>();
+        useCases.add("GreekHeatwave");
+        keywords.clear();
         keywords.add("καύσωνας");keywords.add("Κελσίου");keywords.add("θερμοκρασία_ρεκόρ");keywords.add("GSCP_GR");
-        keywordsPerCollection.put("GreekHeatwave", keywords);*/
+        keywordsPerCollection.put("GreekHeatwave", keywords);
         
         prepareStreamingAPI();
         
@@ -178,7 +185,7 @@ public class TweetsCrawler {
         obj.add("verification", verificationObj);
         
         if(!isVerified){
-            insert(obj, useCase);
+            insert(obj);
         }else{
             /* STEP TWO - Check emoticons/emojis */
 
@@ -186,7 +193,7 @@ public class TweetsCrawler {
             System.out.print("-> emoticon classification : "+emoticon_relevancy+" ");
             if(!emoticon_relevancy){
                 obj.addProperty("emoticon_relevancy", false);
-                insert(obj, useCase);
+                insert(obj);
             }else{
                 obj.addProperty("emoticon_relevancy", true);
 
@@ -204,7 +211,7 @@ public class TweetsCrawler {
 
                 if(estimated_relevancy){
                     obj.addProperty("estimated_relevancy", true);
-                    insert(obj, useCase);
+                    insert(obj);
                     forward(obj, useCase, position);
                 }else if(!estimated_relevancy || imageURL.equals("")){
                     if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){
@@ -212,23 +219,23 @@ public class TweetsCrawler {
                         String estimated_relevancy_str = Classification.classifyText(text, useCase);
                         if(estimated_relevancy_str.equals("")){
                             if(!imageURL.equals("")){ obj.addProperty("estimated_relevancy", false); }
-                            insert(obj, useCase);
+                            insert(obj);
                         }else if(estimated_relevancy_str.equals("true")){
                             System.out.print(": "+estimated_relevancy_str+" ");
                             obj.addProperty("estimated_relevancy", true);
-                            insert(obj, useCase);
+                            insert(obj);
                             forward(obj, useCase, position);
                         }else if(estimated_relevancy_str.equals("false")){
                             System.out.print(": "+estimated_relevancy_str+" ");
                             obj.addProperty("estimated_relevancy", false);
-                            insert(obj, useCase);
+                            insert(obj);
                         }
                     }else{
                         if(!imageURL.equals("")){
                             obj.addProperty("estimated_relevancy", false);
-                            insert(obj, useCase);
+                            insert(obj);
                         }else{
-                            insert(obj, useCase);
+                            insert(obj);
                             forward(obj, useCase, position);
                         }
                     }
@@ -296,7 +303,7 @@ public class TweetsCrawler {
         return obj;
     }
     
-    private static void insert(JsonObject obj, String useCase){
+    private static void insert(JsonObject obj){
         
         String name = obj.getAsJsonObject("user").get("name").getAsString();
         obj.getAsJsonObject("user").addProperty("name", Cryptonite.getEncrypted(name));
@@ -312,7 +319,6 @@ public class TweetsCrawler {
 
             collection.insert(res);
             collection_backup.insert(res);
-            System.out.print("-> saved\n");
             
             mongoClient.close();
         } catch (UnknownHostException | NoSuchAlgorithmException | KeyManagementException ex) {
@@ -368,8 +374,22 @@ public class TweetsCrawler {
     }
     
     private static Position getLocation(String msg){
-        Position position = new Position(0,0); //default Thessaloniki?
+        Position position = new Position(0,0);
         
+        /* PILOT 3 */
+        if(msg.contains("VA639")){
+            return new Position(39.470122, -0.376365);
+        }else if(msg.contains("PN227")){
+            return new Position(39.338871, -0.344753);
+        }else if(msg.contains("DS813")){
+            return new Position(39.357576, -0.324978);
+        }else if(msg.contains("ES590")){
+            return new Position(39.382862, -0.329648);
+        }else if(msg.contains("CS411")){
+            return new Position(39.381683, -0.331412);
+        }
+        
+        /* PILOT 2 */
         if(msg.contains("S32ap")){
             return new Position(45.5493, 11.5497);
         }else if(msg.contains("M90xz")){
@@ -382,7 +402,8 @@ public class TweetsCrawler {
             return new Position(45.5455, 11.5354);
         }
         
-        /*if(msg.contains("ΚΘ_4")){
+        /* PILOT 1 */
+        if(msg.contains("ΚΘ_4")){
             return new Position(40.6207, 22.9649);
         }else if(msg.contains("ΚΘ_6")){
             return new Position(40.6019, 22.9736);
@@ -398,7 +419,7 @@ public class TweetsCrawler {
             return new Position(40.6266, 22.9526);
         }else if(msg.contains("ΔΒ")){
             return new Position(40.5956, 22.9600);
-        }*/
+        }
         
         return position;
     }
@@ -406,10 +427,15 @@ public class TweetsCrawler {
     private static String replaceLocation(String msg){
         String tweet = msg;
         
+        /* PILOT 3 */
+        tweet = tweet.replace("VA639", "Valencia").replace("PN227", "el Parc Natural de s'Albufera").replace("DS813", "la Devesa del Saler").replace("ES590", "el Saler").replace("CS411","el colegio del Saler");
+        
+        /* PILOT 2 */
         tweet = tweet.replace("S32ap", "Matteotti").replace("M90xz", "Angeli").replace("C44ud", "Vicenza").replace("F77ad", "Bacchiglione").replace("3vg87","Pusterla");
         
-        /*tweet = tweet.replace("ΚΘ_4", "4ο ΚΑΠΗ").replace("ΚΘ_6", "6ο ΚΑΠΗ").replace("ΠΑΤ", "Πλατεία Αριστοτέλους").replace("ΠΧ", "Χαριλάου").replace("ΠΤ", "Τούμπα")
-                .replace("ΔΕ", "Εγνατία").replace("ΔΤ", "Τσιμισκή").replace("ΔΒ", "Βούλγαρη");*/
+        /* PILOT 1 */
+        tweet = tweet.replace("ΚΘ_4", "4ο ΚΑΠΗ").replace("ΚΘ_6", "6ο ΚΑΠΗ").replace("ΠΑΤ", "Πλατεία Αριστοτέλους").replace("ΠΧ", "Χαριλάου").replace("ΠΤ", "Τούμπα")
+                .replace("ΔΕ", "Εγνατία").replace("ΔΤ", "Τσιμισκή").replace("ΔΒ", "Βούλγαρη");
         
         return tweet;
     }

@@ -64,7 +64,7 @@ public class TweetsCrawler {
         /* PILOT 3 */
         useCases.add("SpanishFires");
         List<String> keywords = new ArrayList<>();
-        keywords.add("incendio");keywords.add("llamasdefuego");keywords.add("bomberos");
+        keywords.add("incendio");keywords.add("llamas");keywords.add("bomberos");keywords.add("fuego");keywords.add("humo");
         keywordsPerCollection.put("SpanishFires", keywords);
         
         /* PILOT 2 */
@@ -213,7 +213,7 @@ public class TweetsCrawler {
                     insert(obj);
                     forward(obj, useCase, position);
                 }else if(!estimated_relevancy || imageURL.equals("")){
-                    if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")/*||useCase.equals("SpanishFires")*/){ //temporarily
+                    if(useCase.equals("ItalianFloods")||useCase.equals("GreekHeatwave")||useCase.equals("SpanishFires")){ //temporarily
                         System.out.print("-> text classification ");
                         String estimated_relevancy_str = Classification.classifyText(text, useCase);
                         if(estimated_relevancy_str.equals("")){
@@ -386,6 +386,22 @@ public class TweetsCrawler {
             return new Position(39.382862, -0.329648);
         }else if(msg.contains("CS411")){
             return new Position(39.381683, -0.331412);
+        }else if(msg.contains("TR962")){
+            return new Position(39.375969, -0.32913);
+        }else if(msg.contains("RO830")){
+            return new Position(39.339196, -0.319718);
+        }else if(msg.contains("PF002")){
+            return new Position(39.366288, -0.318077);
+        }else if(msg.contains("CV576")){
+            return new Position(39.378063, -0.326468);
+        }else if(msg.contains("PS291")){
+            return new Position(39.377880, -0.322412);
+        }else if(msg.contains("AG749")){
+            return new Position(39.411520, -0.332342);
+        }else if(msg.contains("MS388")){
+            return new Position(39.381224, -0.327893);
+        }else if(msg.contains("AP004")){
+            return new Position(39.381091, -0.332261);
         }
         
         /* PILOT 2 */
@@ -427,7 +443,10 @@ public class TweetsCrawler {
         String tweet = msg;
         
         /* PILOT 3 */
-        tweet = tweet.replace("VA639", "Valencia").replace("PN227", "el Parc Natural de s'Albufera").replace("DS813", "la Devesa del Saler").replace("ES590", "el Saler").replace("CS411","el colegio del Saler");
+        tweet = tweet.replace("VA639", "Valencia").replace("PN227", "el Parque Natural de la Albufera").replace("DS813", "la Devesa").replace("ES590", "el Saler")
+                .replace("CS411","el instituto del Saler").replace("TR962","Tallafoc de la Rambla").replace("RO830","Racó de l´Olla").replace("PF002","playa dels Ferros")
+                .replace("CV576","Camí Vell de la Devesa").replace("PS291","playa del Saler").replace("AG749","playa de l'Arbre del Gos").replace("MS388","la Mallada del Saler")
+                .replace("AP004","Avenida de los Pinares");
         
         /* PILOT 2 */
         tweet = tweet.replace("S32ap", "Matteotti").replace("M90xz", "Angeli").replace("C44ud", "Vicenza").replace("F77ad", "Bacchiglione").replace("3vg87","Pusterla");

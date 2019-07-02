@@ -61,6 +61,7 @@ public class TweetsCrawler {
     
     public static void main(String[] args) throws InterruptedException, UnknownHostException, UnsupportedEncodingException, NoSuchAlgorithmException, KeyManagementException {
         
+        
         /* PILOT 3 */
         useCases.add("SpanishFires");
         List<String> keywords = new ArrayList<>();

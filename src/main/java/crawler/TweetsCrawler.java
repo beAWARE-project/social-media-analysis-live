@@ -173,7 +173,7 @@ public class TweetsCrawler {
         
         JsonObject user = obj.get("user").getAsJsonObject();
         String user_id = user.get("id_str").getAsString();
-        if(!user_id.equals("920984955047567360")){
+        if(!user_id.equals("920984955047567360")&&!user_id.equals("1153271377346138112")){
             VerificationResponse verification = Validation.verifyTweet(obj.toString());
             isVerified = verification.getPredictedValue();
             confidence_value = verification.getConfidenceValue();

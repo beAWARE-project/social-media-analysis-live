@@ -161,6 +161,8 @@ public class TweetsCrawler {
             obj.addProperty("is_retweeted_status",false);
         }
         
+        obj = updateBoundingBox(obj);
+        
         String text = getText(obj);
         Position position = getLocation(text); //this could be added to json
         obj = updateText(obj);
@@ -299,6 +301,30 @@ public class TweetsCrawler {
             text = cleanText(text);
             text = replaceLocation(text);
             obj.addProperty("text", text);
+        }
+        return obj;
+    }
+    
+    private static JsonObject updateBoundingBox(JsonObject obj){
+        
+        if(!obj.get("place").isJsonNull()){
+            JsonObject place = obj.get("place").getAsJsonObject();
+            if(!place.get("bounding_box").isJsonNull()){
+                JsonObject bounding_box = place.get("bounding_box").getAsJsonObject();
+                if(!bounding_box.get("coordinates").isJsonNull()){
+                    JsonArray coordinates = bounding_box.get("coordinates").getAsJsonArray();
+                    JsonArray points = coordinates.get(0).getAsJsonArray();
+                    if(points.size()==4){
+                        points.add(points.get(0));
+
+                        coordinates.remove(0);
+                        coordinates.add(points);
+                        bounding_box.add("coordinates", coordinates);
+                        place.add("bounding_box", bounding_box);
+                        obj.add("place",place);
+                    }
+                }
+            }
         }
         return obj;
     }
